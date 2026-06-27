@@ -1,0 +1,165 @@
+// Production schema variant: identical models to schema.prisma but targeting
+// PostgreSQL (Supabase / Neon). Used to generate Prisma-compatible DDL and, in a
+// deployed environment, as the active schema (set provider/DATABASE_URL there).
+//
+// Generate the DDL offline (no DB connection needed):
+//   prisma migrate diff --from-empty \
+//     --to-schema-datamodel prisma/schema.postgres.prisma --script
+//
+// To run the app against Supabase, set DATABASE_URL to the Supabase connection
+// string and generate the client from this schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime    @default(now())
+
+  workspaces   Workspace[]
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  pages     Page[]
+  links     Link[]
+  tags      Tag[]
+
+  @@index([ownerId])
+}
+
+model Page {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  parentId    String?
+  parent      Page?     @relation("PageChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Page[]    @relation("PageChildren")
+
+  type        String    @default("doc")
+  title       String    @default("Untitled")
+  icon        String?
+  content     String    @default("")
+  markdown    String    @default("")
+  order       Float     @default(0)
+
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  outgoingLinks Link[]  @relation("LinkSource")
+  incomingLinks Link[]  @relation("LinkTarget")
+
+  tags        PageTag[]
+  database    Database?
+
+  @@index([workspaceId])
+  @@index([parentId])
+}
+
+model Database {
+  id          String   @id @default(cuid())
+  workspaceId String
+  pageId      String   @unique
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties  DatabaseProperty[]
+  rows        DatabaseRow[]
+  views       DatabaseView[]
+
+  @@index([workspaceId])
+}
+
+model DatabaseProperty {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  type       String   @default("text")
+  options    String   @default("[]")
+  order      Float    @default(0)
+
+  @@index([databaseId])
+}
+
+model DatabaseRow {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  order      Float    @default(0)
+  cells      String   @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([databaseId])
+}
+
+model DatabaseView {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String   @default("Table")
+  type       String   @default("table")
+  config     String   @default("{}")
+  order      Float    @default(0)
+
+  @@index([databaseId])
+}
+
+model Link {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  sourcePageId String
+  sourcePage   Page      @relation("LinkSource", fields: [sourcePageId], references: [id], onDelete: Cascade)
+
+  targetPageId String
+  targetPage   Page      @relation("LinkTarget", fields: [targetPageId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([sourcePageId, targetPageId])
+  @@index([workspaceId])
+  @@index([targetPageId])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+
+  pages       PageTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model PageTag {
+  pageId String
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, tagId])
+  @@index([tagId])
+}

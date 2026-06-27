@@ -7,12 +7,23 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
 import { Download, Upload, Check, Loader2 } from "lucide-react";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { WikiLink, setWikiLinkTitles } from "./extensions/WikiLink";
 import { savePageContent, renamePage, updatePageIcon } from "@/app/app/actions";
 import { pmToMarkdown } from "@/lib/markdown";
 import { markdownToPm } from "@/lib/markdown-import";
+import {
+  COLLAB_WS_URL,
+  collabEnabled,
+  getCollabUser,
+  roomName,
+} from "@/lib/collab";
+import { PresenceBar } from "./PresenceBar";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -46,13 +57,31 @@ export function PageEditor({
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  // Set up the Yjs document + websocket provider once, only in collab mode.
+  const collabRef = useRef<{
+    ydoc: Y.Doc;
+    provider: WebsocketProvider;
+  } | null>(null);
+  if (collabEnabled && !collabRef.current && typeof window !== "undefined") {
+    const ydoc = new Y.Doc();
+    const provider = new WebsocketProvider(COLLAB_WS_URL, roomName(pageId), ydoc);
+    const user = getCollabUser();
+    provider.awareness.setLocalStateField("user", user);
+    collabRef.current = { ydoc, provider };
+  }
+  const collab = collabRef.current;
+
   const editor = useEditor({
     immediatelyRender: false,
     enableContentCheck: true,
     onContentError: ({ error }) =>
       console.error("Editor content failed to parse:", error),
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        // Yjs provides its own shared undo/redo history in collab mode.
+        ...(collab ? { undoRedo: false } : {}),
+      }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Placeholder.configure({
@@ -60,8 +89,18 @@ export function PageEditor({
       }),
       SlashCommand,
       WikiLink,
+      ...(collab
+        ? [
+            Collaboration.configure({ document: collab.ydoc }),
+            CollaborationCaret.configure({
+              provider: collab.provider,
+              user: getCollabUser(),
+            }),
+          ]
+        : []),
     ],
-    content: parseContentOrEmpty(initialContent),
+    // In collab mode the Yjs doc is the source of content (seeded below).
+    content: collab ? undefined : parseContentOrEmpty(initialContent),
     editorProps: {
       attributes: { class: "px-1 pb-24" },
     },
@@ -73,6 +112,31 @@ export function PageEditor({
       }, 700);
     },
   });
+
+  // Seed an empty collaborative room from the persisted DB content, once synced.
+  useEffect(() => {
+    if (!collab || !editor) return;
+    const { ydoc, provider } = collab;
+    const seed = () => {
+      const fragment = ydoc.getXmlFragment("default");
+      if (fragment.length === 0 && initialContent) {
+        editor.commands.setContent(parseContentOrEmpty(initialContent));
+      }
+    };
+    if (provider.synced) seed();
+    else provider.once("sync", seed);
+  }, [collab, editor, initialContent]);
+
+  // Tear down the provider when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (collabRef.current) {
+        collabRef.current.provider.destroy();
+        collabRef.current.ydoc.destroy();
+        collabRef.current = null;
+      }
+    };
+  }, []);
 
   const doSave = useCallback(
     async (json: string) => {
@@ -144,6 +208,7 @@ export function PageEditor({
           {icon ?? <span className="text-base text-muted">Add icon</span>}
         </button>
         <div className="flex items-center gap-3 text-xs text-muted">
+          {collab && <PresenceBar provider={collab.provider} />}
           <SaveIndicator status={status} />
           <button
             onClick={() => fileInput.current?.click()}

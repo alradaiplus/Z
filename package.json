@@ -10,13 +10,17 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts"
+    "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
+    "collab": "node scripts/collab-server.mjs",
+    "db:pg:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.postgres.prisma --script"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@tiptap/extension-collaboration": "^3.0.0",
+    "@tiptap/extension-collaboration-caret": "^3.0.0",
     "@tiptap/extension-placeholder": "^3.0.0",
     "@tiptap/extension-task-item": "^3.0.0",
     "@tiptap/extension-task-list": "^3.0.0",
@@ -24,6 +28,7 @@
     "@tiptap/react": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
     "@tiptap/suggestion": "^3.0.0",
+    "@tiptap/y-tiptap": "^3.0.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",
     "jose": "^5.9.0",
@@ -31,7 +36,10 @@
     "next": "^15.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "y-prosemirror": "^1.3.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -45,6 +53,7 @@
     "prisma": "^6.19.0",
     "tailwindcss": "^3.4.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "ws": "^8.18.0"
   }
 }

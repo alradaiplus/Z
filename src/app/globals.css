@@ -174,6 +174,34 @@ body {
   text-decoration: underline dotted;
 }
 
+/* Collaboration carets (remote users' cursors) */
+.collaboration-cursor__caret,
+.collaboration-caret__caret {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 1px solid #0d0d0d;
+  border-right: 1px solid #0d0d0d;
+  word-break: normal;
+  pointer-events: none;
+}
+
+.collaboration-cursor__label,
+.collaboration-caret__label {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: 3px 3px 3px 0;
+  padding: 2px 5px;
+  color: #fff;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* Suggestion popups (slash menu + wikilink picker) */
 .suggestion-menu {
   background: rgb(var(--bg));
