@@ -1,0 +1,109 @@
+// Z — Notion + Obsidian notes app.
+// SQLite is used for local development; the same schema promotes to Postgres
+// (Supabase / Neon) for production cloud sync by changing the datasource provider
+// and DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime    @default(now())
+
+  workspaces   Workspace[]
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  pages     Page[]
+  links     Link[]
+  tags      Tag[]
+
+  @@index([ownerId])
+}
+
+model Page {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  parentId    String?
+  parent      Page?     @relation("PageChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Page[]    @relation("PageChildren")
+
+  title       String    @default("Untitled")
+  icon        String?
+  // ProseMirror document JSON (serialized as a string for SQLite portability).
+  content     String    @default("")
+  // Markdown serialization cached for search and export.
+  markdown    String    @default("")
+  order       Float     @default(0)
+
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Wikilinks where this page is the source / the target.
+  outgoingLinks Link[]  @relation("LinkSource")
+  incomingLinks Link[]  @relation("LinkTarget")
+
+  tags        PageTag[]
+
+  @@index([workspaceId])
+  @@index([parentId])
+}
+
+// Resolved [[wikilink]] from one page to another. Powers backlinks + graph view.
+model Link {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  sourcePageId String
+  sourcePage   Page      @relation("LinkSource", fields: [sourcePageId], references: [id], onDelete: Cascade)
+
+  targetPageId String
+  targetPage   Page      @relation("LinkTarget", fields: [targetPageId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now())
+
+  @@unique([sourcePageId, targetPageId])
+  @@index([workspaceId])
+  @@index([targetPageId])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+
+  pages       PageTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model PageTag {
+  pageId String
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, tagId])
+  @@index([tagId])
+}
