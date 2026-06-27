@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "./actions";
 import { buildTree } from "@/lib/page-tree";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { CommandPalette } from "@/components/command/CommandPalette";
 
 export default async function AppLayout({
   children,
@@ -34,6 +35,7 @@ export default async function AppLayout({
         userEmail={session.email}
       />
       <main className="flex-1 overflow-y-auto">{children}</main>
+      <CommandPalette />
     </div>
   );
 }

@@ -45,6 +45,8 @@ model Page {
   parent      Page?     @relation("PageChildren", fields: [parentId], references: [id], onDelete: Cascade)
   children    Page[]    @relation("PageChildren")
 
+  // "doc" for a normal note, "database" for a Notion-style database page.
+  type        String    @default("doc")
   title       String    @default("Untitled")
   icon        String?
   // ProseMirror document JSON (serialized as a string for SQLite portability).
@@ -63,8 +65,68 @@ model Page {
 
   tags        PageTag[]
 
+  // Present only when type == "database".
+  database    Database?
+
   @@index([workspaceId])
   @@index([parentId])
+}
+
+// A Notion-style database lives on a Page (type == "database").
+model Database {
+  id          String   @id @default(cuid())
+  workspaceId String
+  pageId      String   @unique
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties  DatabaseProperty[]
+  rows        DatabaseRow[]
+  views       DatabaseView[]
+
+  @@index([workspaceId])
+}
+
+model DatabaseProperty {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  // "text" | "number" | "select" | "date" | "checkbox"
+  type       String   @default("text")
+  // JSON array of { id, name, color } for select properties.
+  options    String   @default("[]")
+  order      Float    @default(0)
+
+  @@index([databaseId])
+}
+
+model DatabaseRow {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  order      Float    @default(0)
+  // JSON map of propertyId -> value (string | number | boolean | optionId).
+  cells      String   @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([databaseId])
+}
+
+model DatabaseView {
+  id         String   @id @default(cuid())
+  databaseId String
+  database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String   @default("Table")
+  // "table" | "board" | "gallery"
+  type       String   @default("table")
+  // JSON: { filters: [...], sorts: [...], groupByPropertyId?: string }
+  config     String   @default("{}")
+  order      Float    @default(0)
+
+  @@index([databaseId])
 }
 
 // Resolved [[wikilink]] from one page to another. Powers backlinks + graph view.

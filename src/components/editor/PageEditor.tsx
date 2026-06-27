@@ -24,6 +24,7 @@ export function PageEditor({
   initialIcon,
   initialContent,
   knownTitles,
+  tagBar,
   backlinks,
 }: {
   pageId: string;
@@ -31,6 +32,7 @@ export function PageEditor({
   initialIcon: string | null;
   initialContent: string;
   knownTitles: string[];
+  tagBar?: React.ReactNode;
   backlinks: React.ReactNode;
 }) {
   const router = useRouter();
@@ -175,8 +177,10 @@ export function PageEditor({
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Untitled"
-        className="mb-4 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted/50"
+        className="mb-2 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted/50"
       />
+
+      {tagBar}
 
       <EditorContent editor={editor} />
 

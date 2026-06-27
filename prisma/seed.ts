@@ -90,6 +90,66 @@ async function main() {
     }
   }
 
+  // Sample Notion-style database page.
+  const optId = () => `opt_${Math.random().toString(36).slice(2, 10)}`;
+  const status = [
+    { id: optId(), name: "Todo", color: "gray" },
+    { id: optId(), name: "In Progress", color: "blue" },
+    { id: optId(), name: "Done", color: "green" },
+  ];
+  const dbPage = await prisma.page.create({
+    data: {
+      workspaceId: workspace.id,
+      type: "database",
+      title: "Project Tracker",
+      icon: "🗂️",
+      order: 1,
+    },
+  });
+  const database = await prisma.database.create({
+    data: {
+      workspaceId: workspace.id,
+      pageId: dbPage.id,
+      properties: {
+        create: [
+          { name: "Name", type: "text", order: 0 },
+          { name: "Status", type: "select", options: JSON.stringify(status), order: 1 },
+          { name: "Due", type: "date", order: 2 },
+          { name: "Done", type: "checkbox", order: 3 },
+        ],
+      },
+      views: {
+        create: [
+          { name: "Table", type: "table", order: 0 },
+          { name: "Board", type: "board", order: 1 },
+        ],
+      },
+    },
+    include: { properties: true },
+  });
+  const nameP = database.properties.find((p) => p.name === "Name")!;
+  const statusP = database.properties.find((p) => p.name === "Status")!;
+  const dueP = database.properties.find((p) => p.name === "Due")!;
+  const doneP = database.properties.find((p) => p.name === "Done")!;
+  const samples = [
+    { name: "Design landing page", status: 1, due: "2026-07-10", done: false },
+    { name: "Set up CI", status: 2, due: "2026-07-02", done: true },
+    { name: "Write docs", status: 0, due: "2026-07-20", done: false },
+    { name: "Launch beta", status: 0, due: "2026-08-01", done: false },
+  ];
+  await prisma.databaseRow.createMany({
+    data: samples.map((s, i) => ({
+      databaseId: database.id,
+      order: i,
+      cells: JSON.stringify({
+        [nameP.id]: s.name,
+        [statusP.id]: status[s.status].id,
+        [dueP.id]: s.due,
+        [doneP.id]: s.done,
+      }),
+    })),
+  });
+
   console.log(`Seeded demo account: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 }
 
