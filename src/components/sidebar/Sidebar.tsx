@@ -12,6 +12,7 @@ import {
   Search,
   Database,
   Tag,
+  Share2,
 } from "lucide-react";
 import type { TreeNode } from "@/lib/page-tree";
 import {
@@ -74,10 +75,17 @@ export function Sidebar({
         </Link>
         <Link
           href="/app/tags"
-          className="mb-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-surface-hover hover:text-text"
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-surface-hover hover:text-text"
         >
           <Tag size={15} />
           Tags
+        </Link>
+        <Link
+          href="/app/graph"
+          className="mb-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-surface-hover hover:text-text"
+        >
+          <Share2 size={15} />
+          Graph
         </Link>
       </div>
 

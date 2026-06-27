@@ -5,6 +5,8 @@ import { PageEditor } from "@/components/editor/PageEditor";
 import { Backlinks, type BacklinkRef } from "@/components/backlinks/Backlinks";
 import { DatabaseView } from "@/components/database/DatabaseView";
 import { TagBar } from "@/components/tags/TagBar";
+import { LocalGraphPanel } from "@/components/graph/LocalGraphPanel";
+import { getLocalGraph } from "../graph-actions";
 
 export default async function PageView({
   params,
@@ -58,7 +60,7 @@ export default async function PageView({
   }
 
   // ---- Document page ----
-  const [incoming, allPages] = await Promise.all([
+  const [incoming, allPages, localGraph] = await Promise.all([
     prisma.link.findMany({
       where: { targetPageId: pageId },
       select: {
@@ -71,6 +73,7 @@ export default async function PageView({
       where: { workspaceId, archivedAt: null },
       select: { title: true },
     }),
+    getLocalGraph(pageId),
   ]);
 
   const backlinks: BacklinkRef[] = incoming.map((l) => ({
@@ -91,7 +94,12 @@ export default async function PageView({
       initialContent={page.content}
       knownTitles={knownTitles}
       tagBar={tagBar}
-      backlinks={<Backlinks links={backlinks} />}
+      backlinks={
+        <>
+          <Backlinks links={backlinks} />
+          <LocalGraphPanel data={localGraph} focusId={page.id} />
+        </>
+      }
     />
   );
 }

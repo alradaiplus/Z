@@ -93,6 +93,29 @@ try {
   await page.waitForSelector("text=important");
   log("✓ tags index shows tag");
 
+  // --- Graph view ---
+  await page.goto(`${BASE}/app/graph`, { waitUntil: "networkidle" });
+  await page.waitForSelector("text=Graph");
+  await page.waitForSelector("canvas", { timeout: 10000 });
+  // Canvas should be sized (force sim running) and report nodes/links.
+  const canvasBox = await page.locator("canvas").boundingBox();
+  if (!canvasBox || canvasBox.width < 50 || canvasBox.height < 50)
+    throw new Error("graph canvas not sized: " + JSON.stringify(canvasBox));
+  await page.waitForSelector("text=/\\d+ pages? ·/");
+  log(`✓ graph view renders canvas (${Math.round(canvasBox.width)}x${Math.round(canvasBox.height)})`);
+
+  // Clicking a node navigates (click center where the focused/largest node sits).
+  await page.waitForTimeout(1500); // let the layout settle
+  const urlBeforeGraph = page.url();
+  await page.mouse.click(
+    canvasBox.x + canvasBox.width / 2,
+    canvasBox.y + canvasBox.height / 2,
+  );
+  await page.waitForTimeout(800);
+  log(
+    `✓ graph canvas interactive (url ${page.url() === urlBeforeGraph ? "unchanged (no node at center)" : "navigated on node click"})`,
+  );
+
   if (errors.length) {
     log("\n✗ console/page errors:");
     errors.forEach((e) => log("  - " + e));

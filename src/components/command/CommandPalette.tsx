@@ -15,6 +15,7 @@ import {
   Plus,
   Search,
   Tag,
+  Share2,
   Moon,
   CornerDownLeft,
 } from "lucide-react";
@@ -113,6 +114,12 @@ export function CommandPalette() {
         label: "Browse tags",
         icon: <Tag size={16} />,
         run: () => go("/app/tags"),
+      },
+      {
+        id: "graph",
+        label: "Open graph view",
+        icon: <Share2 size={16} />,
+        run: () => go("/app/graph"),
       },
       {
         id: "theme",
