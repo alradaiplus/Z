@@ -79,7 +79,7 @@ export function defaultPages(): SeedPage[] {
         heading(2, text("Try it out")),
         taskList(
           task(false, text("Type "), code("/"), text(" to open the block menu (headings, lists, code, todos…)")),
-          task(false, text("Type "), code("[["), text(" to link to another page — try linking to "), wikiLink("Getting Started"), text("")),
+          task(false, text("Type "), code("[["), text(" to link to another page — try linking to "), wikiLink("Getting Started")),
           task(false, text("Open the "), wikiLink("Ideas"), text(" page and see this page appear in its backlinks")),
           task(false, text("Toggle dark mode from the sidebar header"))
         ),

@@ -46,6 +46,9 @@ export function PageEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    enableContentCheck: true,
+    onContentError: ({ error }) =>
+      console.error("Editor content failed to parse:", error),
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TaskList,

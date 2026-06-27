@@ -42,10 +42,12 @@ export function createSuggestionRenderer<I>(
 
     return {
       onStart: (props) => {
-        renderer = new ReactRenderer(Component, {
-          props,
-          editor: props.editor,
-        });
+        // ReactRenderer's component param is typed against its ref type; our
+        // forwardRef list components satisfy it at runtime, so cast the glue.
+        renderer = new ReactRenderer(
+          Component as ConstructorParameters<typeof ReactRenderer>[0],
+          { props, editor: props.editor },
+        ) as unknown as ReactRenderer<SuggestionListRef>;
         popup = document.createElement("div");
         popup.style.position = "fixed";
         popup.style.zIndex = "50";
