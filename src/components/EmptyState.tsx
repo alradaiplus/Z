@@ -21,7 +21,7 @@ export function EmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
       <FileText size={40} className="mb-4 text-muted" />
-      <h2 className="text-lg font-semibold">No pages yet</h2>
+      <h2 className="font-display text-lg font-semibold">No pages yet</h2>
       <p className="mt-1 text-sm text-muted">
         Create your first page to start writing.
       </p>

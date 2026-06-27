@@ -185,7 +185,7 @@ export function DatabaseView({
         value={pageTitle}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Untitled Database"
-        className="mb-2 w-full bg-transparent text-3xl font-bold outline-none placeholder:text-muted/50"
+        className="font-display mb-2 w-full bg-transparent text-3xl font-bold outline-none placeholder:text-muted/50"
       />
 
       {tagBar}

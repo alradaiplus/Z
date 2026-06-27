@@ -23,6 +23,13 @@ yarn-error.log*
 .env
 .env*.local
 
+# exported markdown vault
+/vault/
+
+# tauri build artifacts
+/src-tauri/target/
+/src-tauri/gen/
+
 # database (SQLite dev db)
 /prisma/dev.db
 /prisma/dev.db-journal

@@ -7,7 +7,7 @@ export default async function TagsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-8 py-12">
-      <h1 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+      <h1 className="font-display mb-6 flex items-center gap-2 text-2xl font-bold">
         <Tag size={22} /> Tags
       </h1>
 

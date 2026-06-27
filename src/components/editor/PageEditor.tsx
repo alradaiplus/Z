@@ -242,7 +242,7 @@ export function PageEditor({
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Untitled"
-        className="mb-2 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted/50"
+        className="font-display mb-2 w-full bg-transparent text-4xl font-bold outline-none placeholder:text-muted/50"
       />
 
       {tagBar}

@@ -54,10 +54,12 @@ export function Sidebar({
     <aside className="flex h-full w-64 flex-shrink-0 flex-col border-r border-border bg-surface">
       <div className="flex items-center justify-between px-3 py-3">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-accent text-xs font-bold text-white">
+          <div className="font-display flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-accent text-xs font-extrabold text-white">
             Z
           </div>
-          <span className="truncate text-sm font-semibold">{workspaceName}</span>
+          <span className="font-display truncate text-sm font-semibold">
+            {workspaceName}
+          </span>
         </div>
         <ThemeToggle />
       </div>

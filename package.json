@@ -12,7 +12,11 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts",
     "collab": "node scripts/collab-server.mjs",
-    "db:pg:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.postgres.prisma --script"
+    "db:pg:ddl": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.postgres.prisma --script",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "icons": "node scripts/gen-icons.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -42,6 +46,7 @@
     "yjs": "^13.6.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

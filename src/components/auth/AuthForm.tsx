@@ -23,10 +23,10 @@ export function AuthForm({
     <div className="flex min-h-screen items-center justify-center bg-bg px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-2xl font-bold text-white">
+          <div className="font-display mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-2xl font-extrabold text-white">
             Z
           </div>
-          <h1 className="text-xl font-semibold">
+          <h1 className="font-display text-xl font-semibold">
             {isSignup ? "Create your account" : "Welcome back"}
           </h1>
           <p className="mt-1 text-sm text-muted">

@@ -3,29 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+  /* --font-sans and --font-display are injected by next/font (Inter, Montserrat). */
+  --font-fallback: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     monospace;
 
-  /* Light theme */
+  /* Light theme — Choladeck brand: orange-red on warm neutrals. */
   --bg: 255 255 255;
-  --surface: 247 247 245;
-  --surface-hover: 237 237 233;
-  --border: 226 226 221;
-  --text: 25 23 17;
-  --muted: 120 119 110;
-  --accent: 35 131 226;
+  --surface: 248 246 244;
+  --surface-hover: 240 236 232;
+  --border: 231 226 221;
+  --text: 28 24 22;
+  --muted: 122 114 108;
+  --accent: 234 78 27;
+  --accent-soft: 251 228 218;
 }
 
 .dark {
-  --bg: 25 25 25;
-  --surface: 32 32 32;
-  --surface-hover: 45 45 45;
-  --border: 47 47 47;
-  --text: 235 235 235;
-  --muted: 155 155 155;
-  --accent: 45 140 240;
+  --bg: 24 23 22;
+  --surface: 32 30 29;
+  --surface-hover: 45 42 40;
+  --border: 49 45 43;
+  --text: 237 234 231;
+  --muted: 159 152 146;
+  --accent: 245 100 55;
+  --accent-soft: 60 38 30;
 }
 
 * {
@@ -42,8 +45,17 @@ body {
 body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), var(--font-fallback);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display font (Montserrat) for headings, titles and the brand mark. */
+.font-display,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  font-family: var(--font-display), var(--font-fallback);
+  letter-spacing: -0.01em;
 }
 
 /* ----------------------------- Editor (ProseMirror) ----------------------- */

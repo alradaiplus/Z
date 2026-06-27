@@ -17,10 +17,12 @@ import {
   Tag,
   Share2,
   Moon,
+  HardDriveDownload,
   CornerDownLeft,
 } from "lucide-react";
 import { createPage, searchPages } from "@/app/app/actions";
 import { createDatabasePage } from "@/app/app/database-actions";
+import { exportVault } from "@/app/app/vault-actions";
 
 type PageResult = { id: string; title: string; icon: string | null };
 
@@ -120,6 +122,18 @@ export function CommandPalette() {
         label: "Open graph view",
         icon: <Share2 size={16} />,
         run: () => go("/app/graph"),
+      },
+      {
+        id: "export-vault",
+        label: "Export workspace to Markdown vault",
+        icon: <HardDriveDownload size={16} />,
+        run: () => {
+          close();
+          startTransition(async () => {
+            const { dir, count } = await exportVault();
+            alert(`Exported ${count} page(s) as Markdown to:\n${dir}`);
+          });
+        },
       },
       {
         id: "theme",
