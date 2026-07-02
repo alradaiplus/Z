@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "./actions";
+import { limit, LIMITS } from "@/lib/validation";
 import {
   newId,
   type CellValue,
@@ -109,6 +110,7 @@ export async function updateCell(
   value: CellValue,
 ): Promise<void> {
   const workspaceId = await getActiveWorkspaceId();
+  if (typeof value === "string") limit(value, LIMITS.cell, "Cell value");
   const row = await prisma.databaseRow.findFirst({
     where: { id: rowId, database: { workspaceId } },
     select: { cells: true },

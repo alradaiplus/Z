@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { limit, LIMITS } from "@/lib/validation";
 import { requireSession } from "@/lib/auth";
 import { pmToMarkdown } from "@/lib/markdown";
 import { normalizeTitle } from "@/lib/wikilinks";
@@ -61,6 +62,7 @@ export async function createPage(parentId?: string | null): Promise<string> {
 export async function renamePage(pageId: string, title: string): Promise<void> {
   const workspaceId = await getActiveWorkspaceId();
   await assertPageInWorkspace(pageId, workspaceId);
+  limit(title, LIMITS.title, "Title");
 
   await prisma.page.update({
     where: { id: pageId },
@@ -78,6 +80,7 @@ export async function updatePageIcon(
 ): Promise<void> {
   const workspaceId = await getActiveWorkspaceId();
   await assertPageInWorkspace(pageId, workspaceId);
+  if (icon) limit(icon, LIMITS.icon, "Icon");
   await prisma.page.update({ where: { id: pageId }, data: { icon } });
   revalidatePath("/app", "layout");
 }
@@ -92,6 +95,7 @@ export async function savePageContent(
 ): Promise<{ savedAt: string }> {
   const workspaceId = await getActiveWorkspaceId();
   await assertPageInWorkspace(pageId, workspaceId);
+  limit(contentJson, LIMITS.content, "Page content");
 
   const markdown = pmToMarkdown(contentJson);
   const updated = await prisma.page.update({
@@ -125,6 +129,21 @@ export async function archivePage(
     data: { archivedAt: archived ? new Date() : null },
   });
   revalidatePath("/app", "layout");
+}
+
+/**
+ * Pages currently in the trash (archived), most-recently-archived first.
+ */
+export async function listArchivedPages(): Promise<
+  { id: string; title: string; icon: string | null; type: string }[]
+> {
+  const workspaceId = await getActiveWorkspaceId();
+  const pages = await prisma.page.findMany({
+    where: { workspaceId, archivedAt: { not: null } },
+    select: { id: true, title: true, icon: true, type: true },
+    orderBy: { archivedAt: "desc" },
+  });
+  return pages;
 }
 
 /**

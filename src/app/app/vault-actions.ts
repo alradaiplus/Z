@@ -1,10 +1,9 @@
 "use server";
 
-import fs from "node:fs/promises";
-import path from "node:path";
 import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "./actions";
 import { pmToMarkdown } from "@/lib/markdown";
+import { createZip, type ZipEntry } from "@/lib/zip";
 import {
   parseProperties,
   parseRows,
@@ -54,10 +53,14 @@ function databaseToMarkdown(
  * preserving the page hierarchy as nested folders. Doc pages export their
  * content; database pages export a Markdown table. Tags become YAML frontmatter.
  *
- * Writes to ./vault by default. In the Tauri desktop build this runs against the
- * user's local filesystem, giving a real on-disk vault.
+ * Returns a base64-encoded ZIP the browser downloads — works on serverless
+ * (Vercel) and in the desktop build alike.
  */
-export async function exportVault(): Promise<{ dir: string; count: number }> {
+export async function exportVault(): Promise<{
+  filename: string;
+  base64: string;
+  count: number;
+}> {
   const workspaceId = await getActiveWorkspaceId();
 
   const pages = await prisma.page.findMany({
@@ -80,7 +83,7 @@ export async function exportVault(): Promise<{ dir: string; count: number }> {
 
   const byId = new Map(pages.map((p) => [p.id, p]));
   const folderFor = (page: (typeof pages)[number]): string => {
-    // Build nested folders from ancestor titles.
+    // Build nested folders from ancestor titles (forward slashes for ZIP paths).
     const parts: string[] = [];
     let current = page.parentId ? byId.get(page.parentId) : undefined;
     let guard = 0;
@@ -88,18 +91,11 @@ export async function exportVault(): Promise<{ dir: string; count: number }> {
       parts.unshift(slugify(current.title));
       current = current.parentId ? byId.get(current.parentId) : undefined;
     }
-    return parts.join(path.sep);
+    return parts.length ? parts.join("/") + "/" : "";
   };
 
-  const root = path.join(process.cwd(), "vault");
-  await fs.rm(root, { recursive: true, force: true });
-  await fs.mkdir(root, { recursive: true });
-
-  let count = 0;
-  for (const page of pages) {
-    const dir = path.join(root, folderFor(page));
-    await fs.mkdir(dir, { recursive: true });
-
+  const seenNames = new Map<string, number>();
+  const entries: ZipEntry[] = pages.map((page) => {
     const tags = page.tags.map((t) => t.tag.name);
     const frontmatter =
       `---\ntitle: ${page.title}\n` +
@@ -118,13 +114,19 @@ export async function exportVault(): Promise<{ dir: string; count: number }> {
       body = md.startsWith("# ") ? `${md}\n` : `# ${page.title}\n\n${md}\n`;
     }
 
-    await fs.writeFile(
-      path.join(dir, `${slugify(page.title)}.md`),
-      frontmatter + body,
-      "utf8",
-    );
-    count++;
-  }
+    // Ensure unique file paths (sibling pages can share a title).
+    let name = `${folderFor(page)}${slugify(page.title)}`;
+    const n = seenNames.get(name) ?? 0;
+    seenNames.set(name, n + 1);
+    if (n > 0) name = `${name} (${n})`;
 
-  return { dir: root, count };
+    return { name: `${name}.md`, content: frontmatter + body };
+  });
+
+  const zip = createZip(entries);
+  return {
+    filename: "z-vault.zip",
+    base64: zip.toString("base64"),
+    count: entries.length,
+  };
 }

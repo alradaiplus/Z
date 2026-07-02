@@ -125,13 +125,21 @@ export function CommandPalette() {
       },
       {
         id: "export-vault",
-        label: "Export workspace to Markdown vault",
+        label: "Export workspace to Markdown vault (.zip)",
         icon: <HardDriveDownload size={16} />,
         run: () => {
           close();
           startTransition(async () => {
-            const { dir, count } = await exportVault();
-            alert(`Exported ${count} page(s) as Markdown to:\n${dir}`);
+            const { filename, base64 } = await exportVault();
+            const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+            const url = URL.createObjectURL(
+              new Blob([bytes], { type: "application/zip" }),
+            );
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
           });
         },
       },

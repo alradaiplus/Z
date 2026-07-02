@@ -68,7 +68,6 @@ export function defaultPages(): SeedPage[] {
       title: "Welcome to Z",
       icon: "👋",
       doc: doc(
-        heading(1, text("Welcome to Z")),
         paragraph(
           text("Z combines the best of "),
           bold("Notion"),
@@ -95,7 +94,6 @@ export function defaultPages(): SeedPage[] {
       title: "Getting Started",
       icon: "🚀",
       doc: doc(
-        heading(1, text("Getting Started")),
         paragraph(
           text("This page is linked from "),
           wikiLink("Welcome to Z"),
@@ -124,7 +122,6 @@ export function defaultPages(): SeedPage[] {
       title: "Ideas",
       icon: "💡",
       doc: doc(
-        heading(1, text("Ideas")),
         paragraph(
           text("A scratchpad. Linked from "),
           wikiLink("Welcome to Z"),

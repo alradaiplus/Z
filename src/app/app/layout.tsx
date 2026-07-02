@@ -4,6 +4,7 @@ import { getActiveWorkspaceId } from "./actions";
 import { buildTree } from "@/lib/page-tree";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { CommandPalette } from "@/components/command/CommandPalette";
+import { AppShell } from "@/components/AppShell";
 
 export default async function AppLayout({
   children,
@@ -28,14 +29,19 @@ export default async function AppLayout({
   const tree = buildTree(pages);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg text-text">
-      <Sidebar
-        tree={tree}
-        workspaceName={workspace?.name ?? "Workspace"}
-        userEmail={session.email}
-      />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+    <>
+      <AppShell
+        sidebar={
+          <Sidebar
+            tree={tree}
+            workspaceName={workspace?.name ?? "Workspace"}
+            userEmail={session.email}
+          />
+        }
+      >
+        {children}
+      </AppShell>
       <CommandPalette />
-    </div>
+    </>
   );
 }

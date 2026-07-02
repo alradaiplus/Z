@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "./actions";
+import { limit, LIMITS } from "@/lib/validation";
 
 export async function getPageTags(
   pageId: string,
@@ -23,6 +24,7 @@ export async function addTagToPage(
   const workspaceId = await getActiveWorkspaceId();
   const name = rawName.trim().replace(/^#/, "");
   if (!name) return null;
+  limit(name, LIMITS.tag, "Tag");
 
   // Ensure the page belongs to the workspace.
   const page = await prisma.page.findFirst({
