@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Maximize2 } from "lucide-react";
 import {
   type CellValue,
   type DbProperty,
@@ -14,6 +15,7 @@ export function BoardView({
   properties,
   rows,
   onCellChange,
+  onOpenRow,
   config,
   onChangeConfig,
 }: SharedViewProps & {
@@ -100,6 +102,7 @@ export function BoardView({
                     properties={properties}
                     groupPropId={groupProp.id}
                     onDragStart={() => setDragRow(row.id)}
+                    onOpen={() => onOpenRow(row.id)}
                   />
                 ))}
               </div>
@@ -117,12 +120,14 @@ function Card({
   properties,
   groupPropId,
   onDragStart,
+  onOpen,
 }: {
   row: DbRow;
   nameProp: DbProperty | null;
   properties: DbProperty[];
   groupPropId: string;
   onDragStart: () => void;
+  onOpen: () => void;
 }) {
   const name = nameProp
     ? String(row.cells[nameProp.id] ?? "")
@@ -135,9 +140,18 @@ function Card({
     <div
       draggable
       onDragStart={onDragStart}
-      className="cursor-grab rounded-md border border-border bg-bg p-2.5 shadow-sm active:cursor-grabbing"
+      className="group/card cursor-grab rounded-md border border-border bg-bg p-2.5 shadow-sm active:cursor-grabbing"
     >
-      <div className="mb-1 text-sm font-medium">{name || "Untitled"}</div>
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <span className="text-sm font-medium">{name || "Untitled"}</span>
+        <button
+          onClick={onOpen}
+          className="flex-shrink-0 rounded p-0.5 text-muted opacity-0 hover:bg-surface-hover hover:text-text group-hover/card:opacity-100"
+          title="Open as page"
+        >
+          <Maximize2 size={13} />
+        </button>
+      </div>
       <div className="flex flex-wrap gap-1.5">
         {others.map((p) => {
           const v = row.cells[p.id];

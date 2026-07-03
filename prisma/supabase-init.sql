@@ -80,6 +80,7 @@ CREATE TABLE "DatabaseRow" (
     "databaseId" TEXT NOT NULL,
     "order" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "cells" TEXT NOT NULL DEFAULT '{}',
+    "pageId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -154,6 +155,9 @@ CREATE INDEX "Database_workspaceId_idx" ON "Database"("workspaceId");
 CREATE INDEX "DatabaseProperty_databaseId_idx" ON "DatabaseProperty"("databaseId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "DatabaseRow_pageId_key" ON "DatabaseRow"("pageId");
+
+-- CreateIndex
 CREATE INDEX "DatabaseRow_databaseId_idx" ON "DatabaseRow"("databaseId");
 
 -- CreateIndex
@@ -197,6 +201,9 @@ ALTER TABLE "DatabaseProperty" ADD CONSTRAINT "DatabaseProperty_databaseId_fkey"
 
 -- AddForeignKey
 ALTER TABLE "DatabaseRow" ADD CONSTRAINT "DatabaseRow_databaseId_fkey" FOREIGN KEY ("databaseId") REFERENCES "Database"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DatabaseRow" ADD CONSTRAINT "DatabaseRow_pageId_fkey" FOREIGN KEY ("pageId") REFERENCES "Page"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "DatabaseView" ADD CONSTRAINT "DatabaseView_databaseId_fkey" FOREIGN KEY ("databaseId") REFERENCES "Database"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -80,6 +80,7 @@ model Page {
 
   tags        PageTag[]
   database    Database?
+  databaseRow DatabaseRow? @relation("RowPage")
 
   @@index([workspaceId])
   @@index([parentId])
@@ -118,6 +119,8 @@ model DatabaseRow {
   database   Database @relation(fields: [databaseId], references: [id], onDelete: Cascade)
   order      Float    @default(0)
   cells      String   @default("{}")
+  pageId     String?  @unique
+  page       Page?    @relation("RowPage", fields: [pageId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

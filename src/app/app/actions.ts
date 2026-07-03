@@ -64,10 +64,46 @@ export async function renamePage(pageId: string, title: string): Promise<void> {
   await assertPageInWorkspace(pageId, workspaceId);
   limit(title, LIMITS.title, "Title");
 
+  const clean = title.trim() || "Untitled";
   await prisma.page.update({
     where: { id: pageId },
-    data: { title: title.trim() || "Untitled" },
+    data: { title: clean },
   });
+
+  // If this page is a database row's detail page, mirror the title into the
+  // row's primary text property so the table stays in sync.
+  const row = await prisma.databaseRow.findUnique({
+    where: { pageId },
+    select: {
+      id: true,
+      cells: true,
+      database: {
+        select: {
+          properties: {
+            orderBy: { order: "asc" },
+            select: { id: true, type: true },
+          },
+        },
+      },
+    },
+  });
+  if (row) {
+    const props = row.database.properties;
+    const nameProp = props.find((p) => p.type === "text") ?? props[0];
+    if (nameProp) {
+      let cells: Record<string, unknown> = {};
+      try {
+        cells = JSON.parse(row.cells);
+      } catch {
+        cells = {};
+      }
+      cells[nameProp.id] = clean;
+      await prisma.databaseRow.update({
+        where: { id: row.id },
+        data: { cells: JSON.stringify(cells) },
+      });
+    }
+  }
 
   // A rename can resolve previously dangling wikilinks across the workspace.
   await resolveAllLinks(workspaceId);

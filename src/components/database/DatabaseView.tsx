@@ -20,6 +20,7 @@ import {
   addRow,
   addView,
   deleteView,
+  openRow,
   updateCell,
   updateProperty,
   updateView,
@@ -140,6 +141,12 @@ export function DatabaseView({
       refresh();
     });
 
+  const onOpenRow = (rowId: string) =>
+    startTransition(async () => {
+      const id = await openRow(rowId);
+      router.push(`/app/${id}`);
+    });
+
   const onTitleChange = (value: string) => {
     setPageTitle(value);
     startTransition(async () => {
@@ -175,6 +182,7 @@ export function DatabaseView({
     properties,
     onCellChange,
     onCreateOption,
+    onOpenRow,
     refresh,
   };
 
@@ -308,5 +316,6 @@ export type SharedViewProps = {
   rows: DbRow[];
   onCellChange: (rowId: string, propertyId: string, value: CellValue) => void;
   onCreateOption: (propertyId: string, name: string) => Promise<string>;
+  onOpenRow: (rowId: string) => void;
   refresh: () => void;
 };

@@ -80,6 +80,9 @@ model Page {
   // Present only when type == "database".
   database    Database?
 
+  // Present when this page is the detail page for a database row.
+  databaseRow DatabaseRow? @relation("RowPage")
+
   @@index([workspaceId])
   @@index([parentId])
 }
@@ -121,6 +124,9 @@ model DatabaseRow {
   order      Float    @default(0)
   // JSON map of propertyId -> value (string | number | boolean | optionId).
   cells      String   @default("{}")
+  // Optional detail page opened when a row is expanded.
+  pageId     String?  @unique
+  page       Page?    @relation("RowPage", fields: [pageId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

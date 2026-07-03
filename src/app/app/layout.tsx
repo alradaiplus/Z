@@ -20,7 +20,8 @@ export default async function AppLayout({
       select: { name: true },
     }),
     prisma.page.findMany({
-      where: { workspaceId, archivedAt: null },
+      // Exclude database row detail pages from the sidebar tree.
+      where: { workspaceId, archivedAt: null, databaseRow: { is: null } },
       select: { id: true, title: true, icon: true, parentId: true, order: true },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),

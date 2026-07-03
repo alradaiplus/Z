@@ -39,6 +39,7 @@ export function PageEditor({
   initialIcon,
   initialContent,
   knownTitles,
+  breadcrumb,
   tagBar,
   backlinks,
 }: {
@@ -47,6 +48,7 @@ export function PageEditor({
   initialIcon: string | null;
   initialContent: string;
   knownTitles: string[];
+  breadcrumb?: React.ReactNode;
   tagBar?: React.ReactNode;
   backlinks: React.ReactNode;
 }) {
@@ -229,6 +231,7 @@ export function PageEditor({
 
   return (
     <div className="mx-auto max-w-3xl px-8 py-12">
+      {breadcrumb}
       <div className="mb-2 flex items-center justify-between">
         <button
           onClick={setEmoji}

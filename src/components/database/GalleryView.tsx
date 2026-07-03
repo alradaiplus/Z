@@ -1,5 +1,6 @@
 "use client";
 
+import { Maximize2 } from "lucide-react";
 import type { SharedViewProps } from "./DatabaseView";
 import { Cell, SelectChip } from "./Cell";
 
@@ -8,6 +9,7 @@ export function GalleryView({
   rows,
   onCellChange,
   onCreateOption,
+  onOpenRow,
 }: SharedViewProps) {
   const nameProp = properties.find((p) => p.type === "text") ?? properties[0];
 
@@ -16,18 +18,27 @@ export function GalleryView({
       {rows.map((row) => (
         <div
           key={row.id}
-          className="rounded-lg border border-border bg-surface/60 p-3"
+          className="group/card rounded-lg border border-border bg-surface/60 p-3"
         >
-          {nameProp && (
-            <div className="mb-2 text-sm font-semibold">
-              <Cell
-                property={nameProp}
-                value={row.cells[nameProp.id] ?? null}
-                onChange={(v) => onCellChange(row.id, nameProp.id, v)}
-                onCreateOption={(name) => onCreateOption(nameProp.id, name)}
-              />
-            </div>
-          )}
+          <div className="mb-2 flex items-start justify-between gap-2">
+            {nameProp && (
+              <div className="flex-1 text-sm font-semibold">
+                <Cell
+                  property={nameProp}
+                  value={row.cells[nameProp.id] ?? null}
+                  onChange={(v) => onCellChange(row.id, nameProp.id, v)}
+                  onCreateOption={(name) => onCreateOption(nameProp.id, name)}
+                />
+              </div>
+            )}
+            <button
+              onClick={() => onOpenRow(row.id)}
+              className="flex-shrink-0 rounded p-0.5 text-muted opacity-0 hover:bg-surface-hover hover:text-text group-hover/card:opacity-100"
+              title="Open as page"
+            >
+              <Maximize2 size={13} />
+            </button>
+          </div>
           <div className="space-y-1.5">
             {properties
               .filter((p) => p.id !== nameProp?.id)

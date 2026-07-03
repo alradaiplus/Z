@@ -104,6 +104,64 @@ export async function addRow(databaseId: string): Promise<void> {
   revalidatePath("/app", "layout");
 }
 
+function safeCells(raw: string): Record<string, CellValue> {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Open a row as its own page (Notion-style). Creates the backing page on first
+ * open, titled from the row's primary text property, nested under the database.
+ * Returns the page id to navigate to.
+ */
+export async function openRow(rowId: string): Promise<string> {
+  const workspaceId = await getActiveWorkspaceId();
+  const row = await prisma.databaseRow.findFirst({
+    where: { id: rowId, database: { workspaceId } },
+    select: {
+      id: true,
+      pageId: true,
+      cells: true,
+      database: {
+        select: {
+          pageId: true,
+          properties: {
+            orderBy: { order: "asc" },
+            select: { id: true, type: true },
+          },
+        },
+      },
+    },
+  });
+  if (!row) throw new Error("Row not found");
+  if (row.pageId) return row.pageId;
+
+  const props = row.database.properties;
+  const nameProp = props.find((p) => p.type === "text") ?? props[0];
+  const cells = safeCells(row.cells);
+  const nameVal = nameProp ? cells[nameProp.id] : null;
+  const title = typeof nameVal === "string" && nameVal ? nameVal : "Untitled";
+
+  const page = await prisma.page.create({
+    data: {
+      workspaceId,
+      parentId: row.database.pageId,
+      type: "doc",
+      title,
+      order: 0,
+    },
+  });
+  await prisma.databaseRow.update({
+    where: { id: rowId },
+    data: { pageId: page.id },
+  });
+  revalidatePath("/app", "layout");
+  return page.id;
+}
+
 export async function updateCell(
   rowId: string,
   propertyId: string,
@@ -113,16 +171,22 @@ export async function updateCell(
   if (typeof value === "string") limit(value, LIMITS.cell, "Cell value");
   const row = await prisma.databaseRow.findFirst({
     where: { id: rowId, database: { workspaceId } },
-    select: { cells: true },
+    select: {
+      cells: true,
+      pageId: true,
+      database: {
+        select: {
+          properties: {
+            orderBy: { order: "asc" },
+            select: { id: true, type: true },
+          },
+        },
+      },
+    },
   });
   if (!row) throw new Error("Row not found");
 
-  let cells: Record<string, CellValue> = {};
-  try {
-    cells = JSON.parse(row.cells);
-  } catch {
-    cells = {};
-  }
+  const cells = safeCells(row.cells);
   if (value === null || value === "") {
     delete cells[propertyId];
   } else {
@@ -133,6 +197,19 @@ export async function updateCell(
     where: { id: rowId },
     data: { cells: JSON.stringify(cells) },
   });
+
+  // Keep the row's detail-page title in sync with its primary text property.
+  if (row.pageId) {
+    const props = row.database.properties;
+    const nameProp = props.find((p) => p.type === "text") ?? props[0];
+    if (nameProp?.id === propertyId) {
+      await prisma.page.update({
+        where: { id: row.pageId },
+        data: { title: typeof value === "string" && value ? value : "Untitled" },
+      });
+    }
+  }
+
   revalidatePath("/app", "layout");
 }
 
@@ -140,10 +217,14 @@ export async function deleteRow(rowId: string): Promise<void> {
   const workspaceId = await getActiveWorkspaceId();
   const row = await prisma.databaseRow.findFirst({
     where: { id: rowId, database: { workspaceId } },
-    select: { id: true },
+    select: { id: true, pageId: true },
   });
   if (!row) throw new Error("Row not found");
   await prisma.databaseRow.delete({ where: { id: rowId } });
+  // Remove the row's detail page too, if it had one.
+  if (row.pageId) {
+    await prisma.page.delete({ where: { id: row.pageId } }).catch(() => {});
+  }
   revalidatePath("/app", "layout");
 }
 

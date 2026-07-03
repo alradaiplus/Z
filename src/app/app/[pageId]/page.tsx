@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "../actions";
@@ -25,12 +27,31 @@ export default async function PageView({
       icon: true,
       content: true,
       tags: { select: { tag: { select: { id: true, name: true } } } },
+      databaseRow: {
+        select: {
+          database: {
+            select: { page: { select: { id: true, title: true, icon: true } } },
+          },
+        },
+      },
     },
   });
   if (!page) notFound();
 
   const tags = page.tags.map((t) => t.tag);
   const tagBar = <TagBar pageId={page.id} initialTags={tags} />;
+
+  // Breadcrumb back to the parent database when this is a row detail page.
+  const dbPage = page.databaseRow?.database.page;
+  const breadcrumb = dbPage ? (
+    <Link
+      href={`/app/${dbPage.id}`}
+      className="mb-3 inline-flex items-center gap-1 text-sm text-muted hover:text-text"
+    >
+      <ChevronLeft size={14} />
+      {dbPage.icon ?? "🗄️"} {dbPage.title || "Database"}
+    </Link>
+  ) : null;
 
   // ---- Database page ----
   if (page.type === "database") {
@@ -93,6 +114,7 @@ export default async function PageView({
       initialIcon={page.icon}
       initialContent={page.content}
       knownTitles={knownTitles}
+      breadcrumb={breadcrumb}
       tagBar={tagBar}
       backlinks={
         <>

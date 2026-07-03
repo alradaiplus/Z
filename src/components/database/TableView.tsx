@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Maximize2 } from "lucide-react";
 import {
   PROPERTY_TYPES,
   type PropertyType,
@@ -17,6 +17,7 @@ export function TableView({
   rows,
   onCellChange,
   onCreateOption,
+  onOpenRow,
   refresh,
 }: SharedViewProps) {
   return (
@@ -60,14 +61,23 @@ export function TableView({
                   />
                 </td>
               ))}
-              <td className="px-2 text-center align-middle">
-                <button
-                  onClick={() => deleteRow(row.id).then(refresh)}
-                  className="text-muted opacity-0 hover:text-red-500 group-hover:opacity-100"
-                  title="Delete row"
-                >
-                  <Trash2 size={14} />
-                </button>
+              <td className="px-2 align-middle">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onOpenRow(row.id)}
+                    className="rounded p-0.5 text-muted opacity-0 hover:bg-surface-hover hover:text-text group-hover:opacity-100"
+                    title="Open as page"
+                  >
+                    <Maximize2 size={14} />
+                  </button>
+                  <button
+                    onClick={() => deleteRow(row.id).then(refresh)}
+                    className="rounded p-0.5 text-muted opacity-0 hover:text-red-500 group-hover:opacity-100"
+                    title="Delete row"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
