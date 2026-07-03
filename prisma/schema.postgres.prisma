@@ -81,9 +81,22 @@ model Page {
   tags        PageTag[]
   database    Database?
   databaseRow DatabaseRow? @relation("RowPage")
+  versions    PageVersion[]
 
   @@index([workspaceId])
   @@index([parentId])
+}
+
+model PageVersion {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  markdown  String
+  createdAt DateTime @default(now())
+
+  @@index([pageId, createdAt])
 }
 
 model Database {

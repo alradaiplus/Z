@@ -133,6 +133,16 @@ export async function savePageContent(
   await assertPageInWorkspace(pageId, workspaceId);
   limit(contentJson, LIMITS.content, "Page content");
 
+  // Snapshot the previous state for version history (throttled to ~every 3 min
+  // of active editing) before overwriting it.
+  const before = await prisma.page.findUnique({
+    where: { id: pageId },
+    select: { title: true, content: true, markdown: true },
+  });
+  if (before && before.content && before.content !== contentJson) {
+    await snapshotVersion(pageId, before);
+  }
+
   const markdown = pmToMarkdown(contentJson);
   const updated = await prisma.page.update({
     where: { id: pageId },
@@ -144,6 +154,96 @@ export async function savePageContent(
   // Refresh backlinks on any page this one links to/from.
   revalidatePath("/app", "layout");
   return { savedAt: updated.updatedAt.toISOString() };
+}
+
+const VERSION_INTERVAL_MS = 3 * 60_000;
+const MAX_VERSIONS = 50;
+
+async function snapshotVersion(
+  pageId: string,
+  state: { title: string; content: string; markdown: string },
+  force = false,
+): Promise<void> {
+  if (!force) {
+    const last = await prisma.pageVersion.findFirst({
+      where: { pageId },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (last && Date.now() - last.createdAt.getTime() < VERSION_INTERVAL_MS) {
+      return;
+    }
+  }
+  await prisma.pageVersion.create({ data: { pageId, ...state } });
+
+  // Prune to the most recent MAX_VERSIONS.
+  const old = await prisma.pageVersion.findMany({
+    where: { pageId },
+    orderBy: { createdAt: "desc" },
+    skip: MAX_VERSIONS,
+    select: { id: true },
+  });
+  if (old.length) {
+    await prisma.pageVersion.deleteMany({
+      where: { id: { in: old.map((o) => o.id) } },
+    });
+  }
+}
+
+/** List a page's version snapshots, newest first. */
+export async function listVersions(
+  pageId: string,
+): Promise<{ id: string; title: string; createdAt: string; preview: string }[]> {
+  const workspaceId = await getActiveWorkspaceId();
+  await assertPageInWorkspace(pageId, workspaceId);
+  const versions = await prisma.pageVersion.findMany({
+    where: { pageId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, createdAt: true, markdown: true },
+    take: MAX_VERSIONS,
+  });
+  return versions.map((v) => ({
+    id: v.id,
+    title: v.title,
+    createdAt: v.createdAt.toISOString(),
+    preview: v.markdown.replace(/\n+/g, " ").slice(0, 120),
+  }));
+}
+
+/**
+ * Restore a page to a snapshot. Snapshots the current state first (so the
+ * restore is itself reversible), then returns the restored content for the
+ * editor to apply.
+ */
+export async function restoreVersion(
+  versionId: string,
+): Promise<{ title: string; content: string }> {
+  const workspaceId = await getActiveWorkspaceId();
+  const version = await prisma.pageVersion.findFirst({
+    where: { id: versionId, page: { workspaceId } },
+    select: { pageId: true, title: true, content: true, markdown: true },
+  });
+  if (!version) throw new Error("Version not found");
+
+  const current = await prisma.page.findUnique({
+    where: { id: version.pageId },
+    select: { title: true, content: true, markdown: true },
+  });
+  if (current?.content) {
+    await snapshotVersion(version.pageId, current, true);
+  }
+
+  await prisma.page.update({
+    where: { id: version.pageId },
+    data: {
+      title: version.title,
+      content: version.content,
+      markdown: version.markdown,
+    },
+  });
+  await resolveLinksForPage(version.pageId);
+  revalidatePath("/app", "layout");
+  return { title: version.title, content: version.content };
 }
 
 export async function deletePage(pageId: string): Promise<void> {

@@ -52,6 +52,18 @@ CREATE TABLE "Page" (
 );
 
 -- CreateTable
+CREATE TABLE "PageVersion" (
+    "id" TEXT NOT NULL,
+    "pageId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "markdown" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PageVersion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Database" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
@@ -146,6 +158,9 @@ CREATE INDEX "Page_workspaceId_idx" ON "Page"("workspaceId");
 CREATE INDEX "Page_parentId_idx" ON "Page"("parentId");
 
 -- CreateIndex
+CREATE INDEX "PageVersion_pageId_createdAt_idx" ON "PageVersion"("pageId", "createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Database_pageId_key" ON "Database"("pageId");
 
 -- CreateIndex
@@ -192,6 +207,9 @@ ALTER TABLE "Page" ADD CONSTRAINT "Page_workspaceId_fkey" FOREIGN KEY ("workspac
 
 -- AddForeignKey
 ALTER TABLE "Page" ADD CONSTRAINT "Page_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Page"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PageVersion" ADD CONSTRAINT "PageVersion_pageId_fkey" FOREIGN KEY ("pageId") REFERENCES "Page"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Database" ADD CONSTRAINT "Database_pageId_fkey" FOREIGN KEY ("pageId") REFERENCES "Page"("id") ON DELETE CASCADE ON UPDATE CASCADE;

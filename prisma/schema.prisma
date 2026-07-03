@@ -83,8 +83,23 @@ model Page {
   // Present when this page is the detail page for a database row.
   databaseRow DatabaseRow? @relation("RowPage")
 
+  versions    PageVersion[]
+
   @@index([workspaceId])
   @@index([parentId])
+}
+
+// Point-in-time snapshot of a page's content, for version history / restore.
+model PageVersion {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  markdown  String
+  createdAt DateTime @default(now())
+
+  @@index([pageId, createdAt])
 }
 
 // A Notion-style database lives on a Page (type == "database").

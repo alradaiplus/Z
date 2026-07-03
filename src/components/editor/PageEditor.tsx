@@ -15,7 +15,8 @@ import type { EditorView } from "@tiptap/pm/view";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { uploadImage } from "@/lib/upload-client";
-import { Download, Upload, Check, Loader2 } from "lucide-react";
+import { Download, Upload, Check, Loader2, History } from "lucide-react";
+import { HistoryPanel } from "./HistoryPanel";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { WikiLink, setWikiLinkTitles } from "./extensions/WikiLink";
 import { savePageContent, renamePage, updatePageIcon } from "@/app/app/actions";
@@ -59,6 +60,7 @@ export function PageEditor({
   const [title, setTitle] = useState(initialTitle);
   const [icon, setIcon] = useState(initialIcon);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -257,6 +259,13 @@ export function PageEditor({
           >
             <Download size={14} /> Export
           </button>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1 hover:text-text"
+            title="Version history"
+          >
+            <History size={14} /> History
+          </button>
           <input
             ref={fileInput}
             type="file"
@@ -283,6 +292,18 @@ export function PageEditor({
       <EditorContent editor={editor} />
 
       <div className="mt-12 border-t border-border pt-6">{backlinks}</div>
+
+      {historyOpen && (
+        <HistoryPanel
+          pageId={pageId}
+          onClose={() => setHistoryOpen(false)}
+          onRestore={(v) => {
+            editor?.commands.setContent(parseContentOrEmpty(v.content));
+            setTitle(v.title);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
