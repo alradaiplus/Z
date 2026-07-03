@@ -9,8 +9,12 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import Image from "@tiptap/extension-image";
+import { TextSelection } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+import { uploadImage } from "@/lib/upload-client";
 import { Download, Upload, Check, Loader2 } from "lucide-react";
 import { SlashCommand } from "./extensions/SlashCommand";
 import { WikiLink, setWikiLinkTitles } from "./extensions/WikiLink";
@@ -84,6 +88,7 @@ export function PageEditor({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      Image.configure({ HTMLAttributes: { class: "editor-image" } }),
       Placeholder.configure({
         placeholder: "Type '/' for commands, '[[' to link a page…",
       }),
@@ -103,6 +108,31 @@ export function PageEditor({
     content: collab ? undefined : parseContentOrEmpty(initialContent),
     editorProps: {
       attributes: { class: "px-1 pb-24" },
+      handlePaste: (view, event) => {
+        const files = imageFiles(event.clipboardData?.files);
+        if (!files.length) return false;
+        event.preventDefault();
+        void uploadAndInsert(view, files);
+        return true;
+      },
+      handleDrop: (view, event) => {
+        const files = imageFiles(event.dataTransfer?.files);
+        if (!files.length) return false;
+        event.preventDefault();
+        const pos = view.posAtCoords({
+          left: event.clientX,
+          top: event.clientY,
+        });
+        if (pos) {
+          view.dispatch(
+            view.state.tr.setSelection(
+              TextSelection.near(view.state.doc.resolve(pos.pos)),
+            ),
+          );
+        }
+        void uploadAndInsert(view, files);
+        return true;
+      },
     },
     onUpdate: ({ editor }) => {
       setStatus("saving");
@@ -276,5 +306,22 @@ function parseContentOrEmpty(content: string): object {
     return JSON.parse(content);
   } catch {
     return EMPTY_DOC;
+  }
+}
+
+function imageFiles(list: FileList | null | undefined): File[] {
+  return Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+}
+
+/** Upload dropped/pasted images and insert them at the current selection. */
+async function uploadAndInsert(view: EditorView, files: File[]) {
+  for (const file of files) {
+    try {
+      const url = await uploadImage(file);
+      const node = view.state.schema.nodes.image.create({ src: url });
+      view.dispatch(view.state.tr.replaceSelectionWith(node));
+    } catch (e) {
+      console.error("Image upload failed:", e);
+    }
   }
 }

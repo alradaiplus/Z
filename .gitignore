@@ -26,6 +26,9 @@ yarn-error.log*
 # exported markdown vault
 /vault/
 
+# uploaded images (local storage adapter)
+/.uploads/
+
 # tauri build artifacts
 /src-tauri/target/
 /src-tauri/gen/

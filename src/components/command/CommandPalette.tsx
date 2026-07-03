@@ -18,11 +18,13 @@ import {
   Share2,
   Moon,
   HardDriveDownload,
+  FileUp,
   CornerDownLeft,
 } from "lucide-react";
 import { createPage, searchPages } from "@/app/app/actions";
 import { createDatabasePage } from "@/app/app/database-actions";
 import { exportVault } from "@/app/app/vault-actions";
+import { importFiles } from "@/app/app/import-actions";
 
 type PageResult = { id: string; title: string; icon: string | null };
 
@@ -124,6 +126,29 @@ export function CommandPalette() {
         run: () => go("/app/graph"),
       },
       {
+        id: "import",
+        label: "Import Markdown (Notion / Obsidian)",
+        icon: <FileUp size={16} />,
+        run: () => {
+          close();
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = ".md,.markdown,.zip";
+          input.multiple = true;
+          input.onchange = () => {
+            if (!input.files?.length) return;
+            const fd = new FormData();
+            Array.from(input.files).forEach((f) => fd.append("files", f));
+            startTransition(async () => {
+              const { count, error } = await importFiles(fd);
+              alert(error ?? `Imported ${count} page(s).`);
+              router.refresh();
+            });
+          };
+          input.click();
+        },
+      },
+      {
         id: "export-vault",
         label: "Export workspace to Markdown vault (.zip)",
         icon: <HardDriveDownload size={16} />,
@@ -159,7 +184,7 @@ export function CommandPalette() {
         },
       },
     ];
-  }, [go]);
+  }, [go, router]);
 
   const filteredCommands = useMemo(() => {
     const q = query.trim().toLowerCase();

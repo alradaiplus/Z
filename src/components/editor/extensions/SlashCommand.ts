@@ -12,10 +12,12 @@ import {
   Code,
   Minus,
   Type,
+  Image as ImageIcon,
 } from "lucide-react";
 import { createElement, type ReactNode } from "react";
 import { createSuggestionRenderer } from "../suggestion/renderer";
 import { SlashMenu } from "../SlashMenu";
+import { uploadImage, pickImage } from "@/lib/upload-client";
 
 export type SlashItem = {
   title: string;
@@ -107,6 +109,26 @@ export const SLASH_ITEMS: SlashItem[] = [
     keywords: ["divider", "hr", "rule", "separator"],
     action: (editor, range) =>
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
+  },
+  {
+    title: "Image",
+    description: "Upload an image",
+    icon: icon(ImageIcon),
+    keywords: ["image", "picture", "photo", "upload", "img"],
+    action: (editor, range) => {
+      editor.chain().focus().deleteRange(range).run();
+      void (async () => {
+        const file = await pickImage();
+        if (!file) return;
+        try {
+          const url = await uploadImage(file);
+          editor.chain().focus().setImage({ src: url }).run();
+        } catch (e) {
+          console.error(e);
+          alert(e instanceof Error ? e.message : "Upload failed");
+        }
+      })();
+    },
   },
 ];
 

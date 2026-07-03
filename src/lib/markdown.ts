@@ -106,6 +106,8 @@ function serializeBlock(node: Node, depth = 0): string {
     }
     case "horizontalRule":
       return "---";
+    case "image":
+      return `![${(node.attrs?.alt as string) ?? ""}](${(node.attrs?.src as string) ?? ""})`;
     default:
       return serializeInline(node.content);
   }

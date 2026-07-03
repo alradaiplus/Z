@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { randomBytes, createHash } from "node:crypto";
 import { prisma } from "@/lib/db";
 import {
   createSession,
@@ -12,8 +13,20 @@ import {
 import { bootstrapWorkspace } from "@/lib/workspace";
 import { rateLimit } from "@/lib/rate-limit";
 import { LIMITS } from "@/lib/validation";
+import { sendPasswordResetEmail } from "@/lib/email";
 
-export type AuthState = { error?: string };
+export type AuthState = { error?: string; notice?: string; devLink?: string };
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+async function origin(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+  const proto = h.get("x-forwarded-proto") || "http";
+  return `${proto}://${host}`;
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TOO_MANY = "Too many attempts. Please wait a minute and try again.";
@@ -97,4 +110,73 @@ export async function login(
 export async function logout(): Promise<void> {
   await destroySession();
   redirect("/login");
+}
+
+const RESET_NOTICE =
+  "If an account exists for that email, a reset link is on its way.";
+
+export async function requestPasswordReset(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!rateLimit(`reset:${await clientIp()}`, 5, 10 * 60_000)) {
+    return { error: TOO_MANY };
+  }
+  if (!EMAIL_RE.test(email)) return { error: "Enter a valid email address." };
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Always respond the same way to avoid leaking which emails are registered.
+  if (!user) return { notice: RESET_NOTICE };
+
+  const token = randomBytes(32).toString("hex");
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + 60 * 60_000), // 1 hour
+    },
+  });
+
+  const url = `${await origin()}/reset?token=${token}`;
+  const { devLink } = await sendPasswordResetEmail(email, url);
+  return { notice: RESET_NOTICE, devLink };
+}
+
+export async function resetPassword(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  if (!rateLimit(`reset-submit:${await clientIp()}`, 10, 10 * 60_000)) {
+    return { error: TOO_MANY };
+  }
+  if (password.length < 8)
+    return { error: "Password must be at least 8 characters." };
+  if (password.length > LIMITS.password) return { error: "Password is too long." };
+
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: { user: true },
+  });
+  if (!record || record.expiresAt < new Date()) {
+    return { error: "This reset link is invalid or has expired." };
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: record.userId },
+      data: { passwordHash: await hashPassword(password) },
+    }),
+    // Invalidate all outstanding reset tokens for this user.
+    prisma.passwordResetToken.deleteMany({ where: { userId: record.userId } }),
+  ]);
+
+  await createSession({ userId: record.userId, email: record.user.email });
+  redirect("/app");
 }

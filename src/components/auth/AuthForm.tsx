@@ -82,7 +82,15 @@ export function AuthForm({
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted">
+        {!isSignup && (
+          <p className="mt-3 text-center text-sm">
+            <Link href="/forgot" className="text-muted hover:text-text hover:underline">
+              Forgot your password?
+            </Link>
+          </p>
+        )}
+
+        <p className="mt-4 text-center text-sm text-muted">
           {isSignup ? "Already have an account? " : "New to Z? "}
           <Link
             href={isSignup ? "/login" : "/signup"}

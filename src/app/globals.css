@@ -168,6 +168,19 @@ body {
   pointer-events: none;
 }
 
+/* Uploaded images */
+.ProseMirror .editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  display: block;
+}
+
+.ProseMirror .editor-image.ProseMirror-selectednode {
+  outline: 2px solid rgb(var(--accent));
+}
+
 /* Wikilink node */
 .wikilink {
   color: rgb(var(--accent));

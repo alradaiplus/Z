@@ -111,6 +111,14 @@ export function markdownToPm(markdown: string): Node {
       continue;
     }
 
+    // Standalone image
+    const img = /^!\[([^\]]*)\]\(([^)]+)\)\s*$/.exec(line);
+    if (img) {
+      blocks.push({ type: "image", attrs: { alt: img[1] || null, src: img[2] } });
+      i++;
+      continue;
+    }
+
     // Blockquote
     if (/^>\s?/.test(line)) {
       const buf: string[] = [];
