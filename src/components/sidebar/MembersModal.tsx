@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { X, UserPlus, Crown } from "lucide-react";
 import {
@@ -44,8 +45,10 @@ export function MembersModal({ onClose }: { onClose: () => void }) {
       router.refresh();
     });
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40" onClick={onClose}>
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
         className="w-full max-w-md rounded-xl border border-border bg-bg p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -127,6 +130,7 @@ export function MembersModal({ onClose }: { onClose: () => void }) {
           ))}
         </ul>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
