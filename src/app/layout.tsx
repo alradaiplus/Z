@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toast";
+import { ConfirmHost } from "@/components/ui/confirm";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,7 +42,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+        <ConfirmHost />
+      </body>
     </html>
   );
 }

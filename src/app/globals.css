@@ -181,6 +181,77 @@ body {
   outline: 2px solid rgb(var(--accent));
 }
 
+/* Inline link mark */
+.ProseMirror a.editor-link {
+  color: rgb(var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Highlight mark */
+.ProseMirror mark {
+  background: rgba(var(--accent), 0.22);
+  border-radius: 3px;
+  padding: 0.05em 0.1em;
+  color: inherit;
+}
+
+/* Drag handle (block reorder) */
+.drag-handle {
+  z-index: 40;
+  transition: opacity 0.15s ease;
+}
+
+/* Syntax highlighting (lowlight / highlight.js token classes) */
+.ProseMirror pre code.hljs {
+  display: block;
+  color: rgb(var(--text));
+}
+.ProseMirror .hljs-comment,
+.ProseMirror .hljs-quote {
+  color: rgb(var(--muted));
+  font-style: italic;
+}
+.ProseMirror .hljs-keyword,
+.ProseMirror .hljs-selector-tag,
+.ProseMirror .hljs-built_in,
+.ProseMirror .hljs-name,
+.ProseMirror .hljs-tag {
+  color: #d1329a;
+}
+.ProseMirror .hljs-string,
+.ProseMirror .hljs-title,
+.ProseMirror .hljs-section,
+.ProseMirror .hljs-attribute,
+.ProseMirror .hljs-literal,
+.ProseMirror .hljs-template-tag,
+.ProseMirror .hljs-template-variable,
+.ProseMirror .hljs-type,
+.ProseMirror .hljs-addition {
+  color: #2f9e44;
+}
+.ProseMirror .hljs-number,
+.ProseMirror .hljs-symbol,
+.ProseMirror .hljs-bullet,
+.ProseMirror .hljs-attr,
+.ProseMirror .hljs-variable,
+.ProseMirror .hljs-meta,
+.ProseMirror .hljs-link {
+  color: rgb(var(--accent));
+}
+.ProseMirror .hljs-function .hljs-title,
+.ProseMirror .hljs-selector-id,
+.ProseMirror .hljs-selector-class {
+  color: #1c7ed6;
+}
+.ProseMirror .hljs-emphasis {
+  font-style: italic;
+}
+.ProseMirror .hljs-strong {
+  font-weight: 700;
+}
+
 /* Wikilink node */
 .wikilink {
   color: rgb(var(--accent));

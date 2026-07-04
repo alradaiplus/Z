@@ -18,6 +18,7 @@ import { createElement, type ReactNode } from "react";
 import { createSuggestionRenderer } from "../suggestion/renderer";
 import { SlashMenu } from "../SlashMenu";
 import { uploadImage, pickImage } from "@/lib/upload-client";
+import { toast } from "@/components/ui/toast";
 
 export type SlashItem = {
   title: string;
@@ -125,7 +126,7 @@ export const SLASH_ITEMS: SlashItem[] = [
           editor.chain().focus().setImage({ src: url }).run();
         } catch (e) {
           console.error(e);
-          alert(e instanceof Error ? e.message : "Upload failed");
+          toast.error(e instanceof Error ? e.message : "Upload failed");
         }
       })();
     },

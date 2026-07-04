@@ -28,6 +28,9 @@ function applyMarks(value: string, marks?: Mark[]): string {
       case "strike":
         out = `~~${out}~~`;
         break;
+      case "highlight":
+        out = `==${out}==`;
+        break;
       case "link": {
         const href = (mark.attrs?.href as string) ?? "";
         out = `[${out}](${href})`;

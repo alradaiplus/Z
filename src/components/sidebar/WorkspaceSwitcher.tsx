@@ -18,6 +18,8 @@ export function WorkspaceSwitcher({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
   const [, startTransition] = useTransition();
 
   const active = workspaces.find((w) => w.active) ?? workspaces[0];
@@ -32,11 +34,13 @@ export function WorkspaceSwitcher({
   };
 
   const create = () => {
+    const name = newName.trim();
+    if (!name) return;
     setOpen(false);
-    const name = window.prompt("Name your new workspace:");
-    if (!name?.trim()) return;
+    setCreating(false);
+    setNewName("");
     startTransition(async () => {
-      await createWorkspace(name.trim());
+      await createWorkspace(name);
       router.push("/app");
       router.refresh();
     });
@@ -94,12 +98,37 @@ export function WorkspaceSwitcher({
             >
               <Users size={14} /> Members &amp; sharing
             </button>
-            <button
-              onClick={create}
-              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-surface-hover"
-            >
-              <Plus size={14} /> New workspace
-            </button>
+            {creating ? (
+              <div className="flex items-center gap-1 px-1 py-1">
+                <input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") create();
+                    if (e.key === "Escape") {
+                      setCreating(false);
+                      setNewName("");
+                    }
+                  }}
+                  placeholder="Workspace name"
+                  className="flex-1 rounded border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-accent"
+                />
+                <button
+                  onClick={create}
+                  className="rounded bg-accent px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+                >
+                  Add
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setCreating(true)}
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-surface-hover"
+              >
+                <Plus size={14} /> New workspace
+              </button>
+            )}
           </div>
         </>
       )}

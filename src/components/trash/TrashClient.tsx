@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Database, RotateCcw, Trash2 } from "lucide-react";
 import { archivePage, deletePage } from "@/app/app/actions";
+import { confirmDialog } from "@/components/ui/confirm";
+import { toast } from "@/components/ui/toast";
 
 type ArchivedPage = {
   id: string;
@@ -25,12 +27,19 @@ export function TrashClient({ pages }: { pages: ArchivedPage[] }) {
     });
   };
 
-  const remove = (id: string, title: string) => {
-    if (!confirm(`Permanently delete "${title}"? This cannot be undone.`)) return;
+  const remove = async (id: string, title: string) => {
+    const ok = await confirmDialog({
+      title: `Permanently delete "${title || "Untitled"}"?`,
+      body: "This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     setItems((prev) => prev.filter((p) => p.id !== id));
     startTransition(async () => {
       await deletePage(id);
       router.refresh();
+      toast.success("Deleted permanently");
     });
   };
 
@@ -67,7 +76,7 @@ export function TrashClient({ pages }: { pages: ArchivedPage[] }) {
             <RotateCcw size={13} /> Restore
           </button>
           <button
-            onClick={() => remove(p.id, p.title)}
+            onClick={() => void remove(p.id, p.title)}
             className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-500 hover:bg-surface-hover"
           >
             <Trash2 size={13} /> Delete

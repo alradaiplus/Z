@@ -25,6 +25,7 @@ import { createPage, searchPages } from "@/app/app/actions";
 import { createDatabasePage } from "@/app/app/database-actions";
 import { exportVault } from "@/app/app/vault-actions";
 import { importFiles } from "@/app/app/import-actions";
+import { toast } from "@/components/ui/toast";
 
 type PageResult = { id: string; title: string; icon: string | null };
 
@@ -141,7 +142,8 @@ export function CommandPalette() {
             Array.from(input.files).forEach((f) => fd.append("files", f));
             startTransition(async () => {
               const { count, error } = await importFiles(fd);
-              alert(error ?? `Imported ${count} page(s).`);
+              if (error) toast.error(error);
+              else toast.success(`Imported ${count} page(s).`);
               router.refresh();
             });
           };

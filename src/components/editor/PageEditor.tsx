@@ -10,15 +10,30 @@ import TaskItem from "@tiptap/extension-task-item";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Highlight from "@tiptap/extension-highlight";
+import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import { TextSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { uploadImage } from "@/lib/upload-client";
-import { Download, Upload, Check, Loader2, History } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Check,
+  Loader2,
+  History,
+  MoreHorizontal,
+  GripVertical,
+} from "lucide-react";
 import { HistoryPanel } from "./HistoryPanel";
+import { EditorBubbleMenu } from "./EditorBubbleMenu";
 import { SlashCommand } from "./extensions/SlashCommand";
+import { CodeBlock } from "./extensions/codeblock";
 import { WikiLink, setWikiLinkTitles } from "./extensions/WikiLink";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { toast } from "@/components/ui/toast";
 import { savePageContent, renamePage, updatePageIcon } from "@/app/app/actions";
 import { pmToMarkdown } from "@/lib/markdown";
 import { markdownToPm } from "@/lib/markdown-import";
@@ -63,6 +78,8 @@ export function PageEditor({
   const [icon, setIcon] = useState(initialIcon);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -92,12 +109,21 @@ export function PageEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        // Replaced by CodeBlockLowlight (syntax highlighting) below.
+        codeBlock: false,
         // Yjs provides its own shared undo/redo history in collab mode.
         ...(collab ? { undoRedo: false } : {}),
       }),
+      CodeBlock,
       TaskList,
       TaskItem.configure({ nested: true }),
       Image.configure({ HTMLAttributes: { class: "editor-image" } }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: { class: "editor-link", rel: "noopener noreferrer" },
+      }),
+      Highlight,
       Placeholder.configure({
         placeholder: "Type '/' for commands, '[[' to link a page…",
       }),
@@ -195,6 +221,22 @@ export function PageEditor({
     };
   }, []);
 
+  // Close the header ••• menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
+        setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   const onTitleChange = (value: string) => {
     setTitle(value);
     if (titleTimer.current) clearTimeout(titleTimer.current);
@@ -203,10 +245,7 @@ export function PageEditor({
     }, 500);
   };
 
-  const setEmoji = async () => {
-    const value = window.prompt("Set an emoji icon (leave blank to remove):", icon ?? "");
-    if (value === null) return;
-    const next = value.trim() || null;
+  const onIconPick = async (next: string | null) => {
     setIcon(next);
     await updatePageIcon(pageId, next);
     router.refresh();
@@ -234,43 +273,62 @@ export function PageEditor({
     editor.commands.setContent(doc);
     setStatus("saving");
     await doSave(JSON.stringify(editor.getJSON()));
+    toast.success("Markdown imported");
   };
 
   return (
     <div className="mx-auto max-w-3xl px-8 py-12">
       {breadcrumb}
       <div className="mb-2 flex items-center justify-between">
-        <button
-          onClick={setEmoji}
+        <EmojiPicker
+          value={icon}
+          onPick={onIconPick}
           className="text-3xl leading-none hover:opacity-70"
-          title="Set icon"
-        >
-          {icon ?? <span className="text-base text-muted">Add icon</span>}
-        </button>
+        />
         <div className="flex items-center gap-3 text-xs text-muted">
           {collab && <PresenceBar provider={collab.provider} />}
           <SaveIndicator status={status} />
-          <button
-            onClick={() => fileInput.current?.click()}
-            className="flex items-center gap-1 hover:text-text"
-            title="Import Markdown"
-          >
-            <Upload size={14} /> Import
-          </button>
-          <button
-            onClick={exportMarkdown}
-            className="flex items-center gap-1 hover:text-text"
-            title="Export Markdown"
-          >
-            <Download size={14} /> Export
-          </button>
-          <button
-            onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-1 hover:text-text"
-            title="Version history"
-          >
-            <History size={14} /> History
-          </button>
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex items-center gap-1 rounded p-1 hover:bg-surface-hover hover:text-text"
+              title="More"
+              aria-label="Page options"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full z-[120] mt-1 w-44 rounded-lg border border-border bg-bg p-1 text-sm shadow-2xl">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    fileInput.current?.click();
+                  }}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-text hover:bg-surface-hover"
+                >
+                  <Upload size={14} /> Import Markdown
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    exportMarkdown();
+                  }}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-text hover:bg-surface-hover"
+                >
+                  <Download size={14} /> Export Markdown
+                </button>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setHistoryOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-text hover:bg-surface-hover"
+                >
+                  <History size={14} /> Version history
+                </button>
+              </div>
+            )}
+          </div>
           <input
             ref={fileInput}
             type="file"
@@ -293,6 +351,15 @@ export function PageEditor({
       />
 
       {tagBar}
+
+      {editor && <EditorBubbleMenu editor={editor} />}
+      {editor && (
+        <DragHandle editor={editor}>
+          <div className="flex h-6 w-4 cursor-grab items-center justify-center rounded text-muted hover:bg-surface-hover active:cursor-grabbing">
+            <GripVertical size={14} />
+          </div>
+        </DragHandle>
+      )}
 
       <EditorContent editor={editor} />
 

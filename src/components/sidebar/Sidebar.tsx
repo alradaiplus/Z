@@ -22,6 +22,7 @@ import {
 } from "@/app/app/actions";
 import { createDatabasePage } from "@/app/app/database-actions";
 import { logout } from "@/app/(auth)/actions";
+import { confirmDialog } from "@/components/ui/confirm";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import type { WorkspaceSummary } from "@/app/app/workspace-actions";
@@ -169,16 +170,19 @@ function PageItem({ node, depth }: { node: TreeNode; depth: number }) {
     });
   };
 
-  const remove = (e: React.MouseEvent) => {
+  const remove = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setMenuOpen(false);
-    if (
-      !confirm(
-        `Delete "${node.title}"${hasChildren ? " and its subpages" : ""}?`,
-      )
-    )
-      return;
+    const ok = await confirmDialog({
+      title: `Delete "${node.title || "Untitled"}"?`,
+      body: hasChildren
+        ? "Its subpages will be deleted too. This cannot be undone."
+        : "This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       await deletePage(node.id);
       if (active) router.push("/app");
