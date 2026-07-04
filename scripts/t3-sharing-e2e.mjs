@@ -54,7 +54,6 @@ try {
 
   // --- User B now sees + can open the shared workspace ---
   await b.reload({ waitUntil: "networkidle" });
-  await b.screenshot({path:"/tmp/bshot.png"});
   await b.click('[aria-label="Switch workspace"]');
   await b.waitForSelector("text=Demo Workspace", { timeout: 8000 });
   await b.click("text=Demo Workspace");
