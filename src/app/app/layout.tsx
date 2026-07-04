@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getActiveWorkspaceId } from "./actions";
+import { listWorkspaces } from "./workspace-actions";
 import { buildTree } from "@/lib/page-tree";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { CommandPalette } from "@/components/command/CommandPalette";
@@ -14,11 +15,8 @@ export default async function AppLayout({
   const session = await requireSession();
   const workspaceId = await getActiveWorkspaceId();
 
-  const [workspace, pages] = await Promise.all([
-    prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { name: true },
-    }),
+  const [workspaces, pages] = await Promise.all([
+    listWorkspaces(),
     prisma.page.findMany({
       // Exclude database row detail pages from the sidebar tree.
       where: { workspaceId, archivedAt: null, databaseRow: { is: null } },
@@ -35,7 +33,7 @@ export default async function AppLayout({
         sidebar={
           <Sidebar
             tree={tree}
-            workspaceName={workspace?.name ?? "Workspace"}
+            workspaces={workspaces}
             userEmail={session.email}
           />
         }

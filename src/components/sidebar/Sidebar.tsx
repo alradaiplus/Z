@@ -23,14 +23,16 @@ import {
 import { createDatabasePage } from "@/app/app/database-actions";
 import { logout } from "@/app/(auth)/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
+import type { WorkspaceSummary } from "@/app/app/workspace-actions";
 
 export function Sidebar({
   tree,
-  workspaceName,
+  workspaces,
   userEmail,
 }: {
   tree: TreeNode[];
-  workspaceName: string;
+  workspaces: WorkspaceSummary[];
   userEmail: string;
 }) {
   const router = useRouter();
@@ -52,15 +54,8 @@ export function Sidebar({
 
   return (
     <aside className="flex h-full w-64 flex-shrink-0 flex-col border-r border-border bg-surface">
-      <div className="flex items-center justify-between px-3 py-3">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className="font-display flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-accent text-xs font-extrabold text-white">
-            Z
-          </div>
-          <span className="font-display truncate text-sm font-semibold">
-            {workspaceName}
-          </span>
-        </div>
+      <div className="flex items-center justify-between gap-1 px-3 py-3">
+        <WorkspaceSwitcher workspaces={workspaces} />
         <ThemeToggle />
       </div>
 

@@ -69,7 +69,11 @@ export async function bootstrapWorkspace(
   name = "My Workspace",
 ): Promise<{ workspaceId: string; firstPageId: string }> {
   const workspace = await prisma.workspace.create({
-    data: { name, ownerId: userId },
+    data: {
+      name,
+      ownerId: userId,
+      members: { create: { userId, role: "owner" } },
+    },
   });
 
   const pages = defaultPages();

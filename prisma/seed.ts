@@ -27,7 +27,11 @@ async function main() {
   });
 
   const workspace = await prisma.workspace.create({
-    data: { name: "Demo Workspace", ownerId: user.id },
+    data: {
+      name: "Demo Workspace",
+      ownerId: user.id,
+      members: { create: { userId: user.id, role: "owner" } },
+    },
   });
 
   const pages = defaultPages();

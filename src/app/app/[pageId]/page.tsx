@@ -9,6 +9,7 @@ import { DatabaseView } from "@/components/database/DatabaseView";
 import { TagBar } from "@/components/tags/TagBar";
 import { LocalGraphPanel } from "@/components/graph/LocalGraphPanel";
 import { getLocalGraph } from "../graph-actions";
+import { signCollabToken } from "@/lib/collab-token";
 
 export default async function PageView({
   params,
@@ -106,6 +107,11 @@ export default async function PageView({
 
   const knownTitles = allPages.map((p) => p.title);
 
+  // Authorize the collaboration room only after confirming page access above.
+  const collabToken = process.env.NEXT_PUBLIC_COLLAB_WS_URL
+    ? await signCollabToken(`page.${page.id}`)
+    : undefined;
+
   return (
     <PageEditor
       key={page.id}
@@ -114,6 +120,7 @@ export default async function PageView({
       initialIcon={page.icon}
       initialContent={page.content}
       knownTitles={knownTitles}
+      collabToken={collabToken}
       breadcrumb={breadcrumb}
       tagBar={tagBar}
       backlinks={

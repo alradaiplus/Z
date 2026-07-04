@@ -40,6 +40,7 @@ export function PageEditor({
   initialIcon,
   initialContent,
   knownTitles,
+  collabToken,
   breadcrumb,
   tagBar,
   backlinks,
@@ -49,6 +50,7 @@ export function PageEditor({
   initialIcon: string | null;
   initialContent: string;
   knownTitles: string[];
+  collabToken?: string;
   breadcrumb?: React.ReactNode;
   tagBar?: React.ReactNode;
   backlinks: React.ReactNode;
@@ -72,7 +74,10 @@ export function PageEditor({
   } | null>(null);
   if (collabEnabled && !collabRef.current && typeof window !== "undefined") {
     const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(COLLAB_WS_URL, roomName(pageId), ydoc);
+    const provider = new WebsocketProvider(COLLAB_WS_URL, roomName(pageId), ydoc, {
+      // Signed token proving this user may join the room (verified server-side).
+      params: collabToken ? { token: collabToken } : {},
+    });
     const user = getCollabUser();
     provider.awareness.setLocalStateField("user", user);
     collabRef.current = { ydoc, provider };

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { limit, LIMITS } from "@/lib/validation";
 import { requireSession } from "@/lib/auth";
@@ -12,18 +13,37 @@ import {
   resolveAllLinks,
 } from "@/lib/workspace";
 
+const WORKSPACE_COOKIE = "z_workspace";
+
 /**
- * Resolve the active workspace for the current user, bootstrapping one if the
- * account somehow has none. Phase 1 uses a single workspace per user.
+ * Resolve the active workspace for the current user. Honours the `z_workspace`
+ * cookie when the user is a member of it; otherwise falls back to their first
+ * membership (bootstrapping one if the account somehow has none). Because every
+ * other query keys off this id, membership is the single access-control gate.
  */
 export async function getActiveWorkspaceId(): Promise<string> {
   const session = await requireSession();
-  const workspace = await prisma.workspace.findFirst({
-    where: { ownerId: session.userId },
+
+  const preferred = (await cookies()).get(WORKSPACE_COOKIE)?.value;
+  if (preferred) {
+    const member = await prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: { workspaceId: preferred, userId: session.userId },
+      },
+      select: { workspaceId: true },
+    });
+    if (member) return member.workspaceId;
+  }
+
+  // Default to the user's earliest membership — i.e. their own workspace,
+  // created at signup — until they explicitly switch to a shared one.
+  const first = await prisma.workspaceMember.findFirst({
+    where: { userId: session.userId },
     orderBy: { createdAt: "asc" },
-    select: { id: true },
+    select: { workspaceId: true },
   });
-  if (workspace) return workspace.id;
+  if (first) return first.workspaceId;
+
   const { workspaceId } = await bootstrapWorkspace(session.userId);
   return workspaceId;
 }

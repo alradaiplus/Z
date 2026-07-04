@@ -12,8 +12,33 @@ import * as syncProtocol from "y-protocols/sync";
 import * as awarenessProtocol from "y-protocols/awareness";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
+import { jwtVerify } from "jose";
 
 const PORT = Number(process.env.COLLAB_PORT || 1234);
+
+// When AUTH_SECRET is set, every connection must present a valid token (minted
+// by the app after checking page access) whose `room` claim matches the room it
+// joins. Without AUTH_SECRET the server is open (local dev convenience).
+const AUTH_SECRET = process.env.AUTH_SECRET;
+const secretKey = AUTH_SECRET ? new TextEncoder().encode(AUTH_SECRET) : null;
+if (!secretKey) {
+  console.warn(
+    "⚠ collab server running WITHOUT auth (AUTH_SECRET not set). Do not use in production.",
+  );
+}
+
+async function authorize(req, roomName) {
+  if (!secretKey) return true;
+  try {
+    const url = new URL(req.url ?? "/", "http://localhost");
+    const token = url.searchParams.get("token");
+    if (!token) return false;
+    const { payload } = await jwtVerify(token, secretKey);
+    return payload.room === roomName;
+  } catch {
+    return false;
+  }
+}
 
 const MESSAGE_SYNC = 0;
 const MESSAGE_AWARENESS = 1;
@@ -66,10 +91,16 @@ function getRoom(name) {
 
 const wss = new WebSocketServer({ port: PORT, host: "0.0.0.0" });
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", async (ws, req) => {
   const roomName = decodeURIComponent(
     (req.url || "/").slice(1).split("?")[0] || "default",
   );
+
+  if (!(await authorize(req, roomName))) {
+    ws.close(1008, "unauthorized");
+    return;
+  }
+
   const { doc, awareness, conns } = getRoom(roomName);
   conns.set(ws, new Set());
 
