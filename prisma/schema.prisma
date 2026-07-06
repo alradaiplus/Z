@@ -218,3 +218,12 @@ model PageTag {
   @@id([pageId, tagId])
   @@index([tagId])
 }
+
+// Uploaded images, stored in the database so they survive serverless deploys
+// (no writable disk on Vercel). Served back via /media/[name].
+model ImageAsset {
+  name      String   @id
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+}

@@ -14,9 +14,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // No directUrl: schema changes are applied via SQL (supabase-init.sql +
+  // migrations-supabase/), so the runtime client must not require a second
+  // env var — a missing DIRECT_URL would crash every query in production.
 }
 
 model User {
@@ -205,4 +207,13 @@ model PageTag {
 
   @@id([pageId, tagId])
   @@index([tagId])
+}
+
+// Uploaded images, stored in the database so they survive serverless deploys
+// (no writable disk on Vercel). Served back via /media/[name].
+model ImageAsset {
+  name      String   @id
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
 }

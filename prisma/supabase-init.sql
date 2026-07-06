@@ -267,3 +267,13 @@ ALTER TABLE "PageTag" ADD CONSTRAINT "PageTag_pageId_fkey" FOREIGN KEY ("pageId"
 -- AddForeignKey
 ALTER TABLE "PageTag" ADD CONSTRAINT "PageTag_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tag"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- CreateTable (uploaded images, stored in-database for serverless hosts)
+CREATE TABLE "ImageAsset" (
+    "name" TEXT NOT NULL,
+    "mime" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ImageAsset_pkey" PRIMARY KEY ("name")
+);

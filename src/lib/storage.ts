@@ -1,21 +1,16 @@
 import "server-only";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { randomBytes } from "node:crypto";
+import { prisma } from "./db";
 
-// Pluggable blob storage for uploaded images.
+// Blob storage for uploaded images, backed by the database (ImageAsset table)
+// and served through the `/media/[name]` route handler.
 //
-// The default adapter writes to `.uploads/` and serves files back through the
-// `/media/[name]` route handler — works in local dev, the desktop build, and any
-// Node host with a writable disk. (Next doesn't serve files written to `public/`
-// at runtime, hence the route.) On serverless (Vercel) the filesystem is
-// ephemeral/read-only, so swap in a Supabase Storage or S3 adapter there (same
-// `saveImage` contract):
-//
-//   const { data } = await supabase.storage.from("uploads").upload(key, buf);
-//   return supabase.storage.from("uploads").getPublicUrl(key).data.publicUrl;
-
-export const UPLOAD_DIR = path.join(process.cwd(), ".uploads");
+// Why the DB and not disk: on serverless hosts (Vercel) the filesystem is
+// read-only/ephemeral, so files written at runtime 500 or silently vanish
+// between invocations. The database is the one durable store the app already
+// has on every host (SQLite in dev, Postgres in production). At the 10MB/image
+// cap this is fine for a notes app; swap `saveImage`/`readImage` for a
+// Supabase Storage or S3 adapter if uploads ever outgrow it.
 
 const EXT_BY_MIME: Record<string, string> = {
   "image/png": "png",
@@ -44,7 +39,19 @@ export async function saveImage(
 
   const ext = EXT_BY_MIME[mime];
   const name = `${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.writeFile(path.join(UPLOAD_DIR, name), bytes);
+  await prisma.imageAsset.create({
+    data: { name, mime, data: Uint8Array.from(bytes) },
+  });
   return { url: `/media/${name}` };
+}
+
+/**
+ * Look up a stored image by its URL key. Returns null when unknown.
+ */
+export async function readImage(
+  name: string,
+): Promise<{ mime: string; data: Uint8Array<ArrayBuffer> } | null> {
+  const asset = await prisma.imageAsset.findUnique({ where: { name } });
+  if (!asset) return null;
+  return { mime: asset.mime, data: Uint8Array.from(asset.data) };
 }
